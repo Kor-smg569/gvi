@@ -17,7 +17,6 @@ class _ProjectCreationStep1State extends State<ProjectCreationStep1> {
   final TextEditingController _nameController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -25,29 +24,29 @@ class _ProjectCreationStep1State extends State<ProjectCreationStep1> {
   }
 
   void _navigateStep2() {
-    // 프로젝트 이름이 입력되었는지 확인
+    // Check if the project name is entered
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('프로젝트 이름을 입력해주세요.')),
+        SnackBar(content: Text('Please enter the project name.')),
       );
       return;
     }
 
-    // Project 객체 생성
+    // Create Project object
     Project newProject = Project(
-        id: (++_projectIdCounter).toString(),
+      id: (++_projectIdCounter).toInt(),
       name: _nameController.text,
       creationDate: _selectedDate,
     );
 
-    // 다음 단계로 이동
+    // Navigate to the next step
     widget.onNext(newProject);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('프로젝트 생성 - 단계 1')),
+      appBar: AppBar(title: Text('Step 1 - Project Naming')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -56,17 +55,17 @@ class _ProjectCreationStep1State extends State<ProjectCreationStep1> {
             children: [
               TextField(
                 controller: _nameController,
-                decoration: InputDecoration(labelText: '프로젝트 이름'),
+                decoration: InputDecoration(labelText: 'Project Name'),
               ),
               ListTile(
-                title: Text('생성 날짜: ${DateFormat.yMMMd().format(_selectedDate)}'),
+                title: Text('Creation Date: ${DateFormat.yMMMd().format(_selectedDate)}'),
                 trailing: Icon(Icons.calendar_today),
                 onTap: () async {
                   DateTime? pickedDate = await showDatePicker(
                     context: context,
                     initialDate: _selectedDate,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2025),
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime(2030),
                   );
                   if (pickedDate != null) {
                     setState(() {
@@ -75,10 +74,9 @@ class _ProjectCreationStep1State extends State<ProjectCreationStep1> {
                   }
                 },
               ),
-
               ElevatedButton(
                 onPressed: _navigateStep2,
-                child: Text('다음'),
+                child: Text('Next'),
               ),
             ],
           ),

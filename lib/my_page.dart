@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-
 import 'project_data.dart';
 import 'project_creation_step1.dart';
 import 'project_creation_step2.dart';
@@ -19,7 +18,7 @@ class MyPage extends StatefulWidget {
 
 class _MyPageState extends State<MyPage> {
   Future<void> createProjectOnServer(String projectName) async {
-    final url = Uri.parse('http://192.168.2.53:8080/upload');
+    final url = Uri.parse('http://10.32.36.63:8080/upload');
     final response = await http.post(url,
         headers: {"Content-Type": "application/json"},
         body: json.encode({'name': projectName}));
@@ -35,17 +34,15 @@ class _MyPageState extends State<MyPage> {
 
   void _startProjectCreationProcess() {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) =>
-          ProjectCreationStep1(
-            onNext: (Project project) {
-              _navigateToStep2(project);
-              // 서버와의 통신을 트리거하는 부분, 예시로 projectName을 보냄
-              createProjectOnServer(project.name);
-            },
-          ),
+      builder: (context) => ProjectCreationStep1(
+        onNext: (Project project) {
+          _navigateToStep2(project);
+          // 서버와의 통신을 트리거하는 부분, 예시로 projectName을 보냄
+          createProjectOnServer(project.name);
+        },
+      ),
     ));
   }
-
 
   void _navigateToStep2(Project project) {
     Navigator.of(context).push(MaterialPageRoute(
@@ -71,11 +68,15 @@ class _MyPageState extends State<MyPage> {
     ));
   }
 
-
   void _openProjectDetails(Project project) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => ProjectDetailPage(project: project),
-    ));
+    if (project.id != null) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => ProjectDetailPage(projectId: project.id!),
+      ));
+    } else {
+      // project.id가 null인 경우 처리 로직 추가
+      print('Project ID is null');
+    }
   }
 
   @override
@@ -114,11 +115,11 @@ class _MyPageState extends State<MyPage> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.view_list),
-            label: '프로젝트 목록',
+            label: 'Project List',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.unarchive),
-            label: '공유함',
+            label: 'Archive',
           ),
         ],
       ),
@@ -160,9 +161,9 @@ class _MyPageState extends State<MyPage> {
       ),
       child: project.imagePath != null
           ? AspectRatio(
-              aspectRatio: 1.0,
-              child: Image.file(File(project.imagePath!), fit: BoxFit.cover),
-            )
+        aspectRatio: 1.0,
+        child: Image.file(File(project.imagePath!), fit: BoxFit.cover),
+      )
           : const SizedBox(),
     );
   }
@@ -178,7 +179,7 @@ class _MyPageState extends State<MyPage> {
             Text(
               project.name,
               style:
-                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+              const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8.0),
             Text(
@@ -205,14 +206,14 @@ class _MyPageState extends State<MyPage> {
             value: 'edit',
             child: ListTile(
               leading: const Icon(Icons.edit),
-              title: const Text('이름 편집'),
+              title: const Text('Edit Name'),
             ),
           ),
           PopupMenuItem<String>(
             value: 'delete',
             child: ListTile(
               leading: const Icon(Icons.delete),
-              title: const Text('프로젝트 삭제'),
+              title: const Text('Delete Project'),
             ),
           ),
         ];
@@ -224,24 +225,24 @@ class _MyPageState extends State<MyPage> {
     final projectData = Provider.of<ProjectData>(context, listen: false);
     final project = projectData.projects[index];
     TextEditingController _nameEditController =
-        TextEditingController(text: project.name);
+    TextEditingController(text: project.name);
 
     String? newName = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('프로젝트 이름 편집'),
+          title: const Text('Edit Project Name'),
           content: TextField(
             controller: _nameEditController,
-            decoration: const InputDecoration(hintText: '새 이름 입력'),
+            decoration: const InputDecoration(hintText: 'Enter new name'),
           ),
           actions: [
             TextButton(
-              child: const Text('취소'),
+              child: const Text('Cancel'),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: const Text('저장'),
+              child: const Text('Save'),
               onPressed: () {
                 Navigator.of(context).pop(_nameEditController.text);
               },

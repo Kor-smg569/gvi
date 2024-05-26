@@ -24,10 +24,12 @@ class _ProjectCreationStep3State extends State<ProjectCreationStep3> {
   List<Offset> _points = [];
   List<List<Offset>> _lines = [];
   bool _isTouchEnabled = false;
+  bool _isFABOpen = false;
   GlobalKey _imageKey = GlobalKey();
   TransformationController _controller = TransformationController();
   Size _imageSize = Size.zero;
   Size _actualImageSize = Size.zero;
+  String? _knownDistance;
 
   @override
   void initState() {
@@ -50,6 +52,9 @@ class _ProjectCreationStep3State extends State<ProjectCreationStep3> {
   }
 
   void _toggleTouch() => setState(() => _isTouchEnabled = !_isTouchEnabled);
+
+  void _toggleFAB() => setState(() => _isFABOpen = !_isFABOpen);
+
 
   Offset _convertToRelativePosition(Offset globalPosition) {
     final RenderBox imageBox = _imageKey.currentContext!.findRenderObject() as RenderBox;
@@ -99,14 +104,110 @@ class _ProjectCreationStep3State extends State<ProjectCreationStep3> {
     });
   }
 
-  void _navigateToStep4() => widget.onNext(widget.project);
+  void _navigateToStep4() {
+    widget.project.knownDistance = _knownDistance;
+    // 저장할 좌표 데이터 준비
+    List<Map<String, dynamic>> linesWithNumbers = [];
+    for (int i = 0; i < _lines.length; i++) {
+      linesWithNumbers.add({
+        'lineNumber': i + 1,  // 라인 순번 추가
+        'start': {'x': _lines[i][0].dx * _actualImageSize.width, 'y': _lines[i][0].dy * _actualImageSize.height},
+        'end': {'x': _lines[i][1].dx * _actualImageSize.width, 'y': _lines[i][1].dy * _actualImageSize.height}
+      });
+    }
+
+    widget.project.linesData = linesWithNumbers;
+
+    // Step 4로 이동하면서 Project 객체와 이미지 경로를 전달
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => ProjectCreationStep4(
+        project: widget.project,
+        imagePath: widget.imagePath,  // 이미지 경로도 전달
+        onComplete: widget.onNext,  // onNext 함수를 ProjectCreationStep4에 전달
+      ),
+    ));
+  }
+
+
+  void _showModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // 키보드에 의해 모달이 조정되도록 설정
+      builder: (BuildContext context) {
+        TextEditingController sensorWidthController = TextEditingController();
+        return Padding(
+          padding: MediaQuery.of(context).viewInsets, // 키보드 높이에 따라 패딩 조절
+          child: Container(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TextField(
+                  controller: sensorWidthController,
+                  decoration: InputDecoration(
+                    labelText: 'Known Distance (e.g., 200) mm',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (sensorWidthController.text.isNotEmpty) {
+                      setState(() {
+                        _knownDistance = sensorWidthController.text;  // 텍스트를 직접 문자열로 저장
+                      });
+                      Navigator.pop(context);
+                    }
+                    print(_knownDistance);
+                  },
+
+                  child: Text('Submit'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+  void _confirmNavigation() { // 다음 단계 이동 시 경고문 모달창
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Move to Next Step?'),
+          content: Text('Are you sure you want to proceed to the next step? Make sure all data is correct.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 모달창을 닫습니다.
+              },
+            ),
+            TextButton(
+              child: Text('Proceed'),
+              onPressed: () {
+                Navigator.of(context).pop(); // 모달창을 닫고,
+                _navigateToStep4();           // 다음 스텝으로 넘어갑니다.
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Step 3: Measure Points'),
-        actions: [IconButton(icon: Icon(Icons.navigate_next), onPressed: _navigateToStep4)],
+        actions: [
+          IconButton(
+            icon: Icon(Icons.navigate_next),
+            onPressed: _confirmNavigation, // 변경된 부분
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -154,10 +255,10 @@ class _ProjectCreationStep3State extends State<ProjectCreationStep3> {
                   DataColumn(label: Text('End Point')),
                 ],
                 rows: _lines.asMap().entries.map((entry) {
-                  int idx = entry.key;
+                  int lineCount = entry.key;
                   List<Offset> line = entry.value;
                   return DataRow(cells: [
-                    DataCell(Text('Line ${idx + 1}')),
+                    DataCell(Text('Line ${lineCount + 1}')),
                     DataCell(Text('(${(line[0].dx * _actualImageSize.width).toStringAsFixed(2)}, ${(line[0].dy * _actualImageSize.height).toStringAsFixed(2)})')),
                     DataCell(Text('(${(line[1].dx * _actualImageSize.width).toStringAsFixed(2)}, ${(line[1].dy * _actualImageSize.height).toStringAsFixed(2)})')),
                   ]);
@@ -167,19 +268,46 @@ class _ProjectCreationStep3State extends State<ProjectCreationStep3> {
           ],
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
+      floatingActionButton: _buildFab(context),
+    );
+  }
+
+  Widget _buildFab(BuildContext context) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      height: _isFABOpen ? 250 : 60,
+      width: 60,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          FloatingActionButton(
-            onPressed: _toggleTouch,
-            tooltip: 'Toggle Touch',
-            child: Icon(_isTouchEnabled ? Icons.not_interested : Icons.touch_app),
+          Visibility(
+            visible: _isFABOpen,
+            child: FloatingActionButton(
+              onPressed: _toggleTouch,
+              tooltip: 'Toggle Touch',
+              child: Icon(_isTouchEnabled ? Icons.touch_app : Icons.not_interested),
+            ),
           ),
-          SizedBox(height: 20),
+          Visibility(
+            visible: _isFABOpen,
+            child: FloatingActionButton(
+              onPressed: _undoLastAction,
+              tooltip: 'Undo Last Action',
+              child: Icon(Icons.undo),
+            ),
+          ),
+          Visibility(
+            visible: _isFABOpen,
+            child: FloatingActionButton(
+              onPressed: _showModal,
+              tooltip: 'Show Modal',
+              child: Icon(Icons.camera),
+            ),
+          ),
           FloatingActionButton(
-            onPressed: _undoLastAction,
-            tooltip: 'Undo Last Action',
-            child: Icon(Icons.undo),
+            onPressed: _toggleFAB,
+            tooltip: 'Toggle Options',
+            child: Icon(_isFABOpen ? Icons.close : Icons.menu),
           ),
         ],
       ),
@@ -225,3 +353,4 @@ class LinePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+

@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'database_helper.dart';
 import 'my_page.dart';
 import 'project_data.dart';
 
 void main() {
-  runApp(const MyApp());
+  final databaseHelper = DatabaseHelper();
+  runApp(MyApp(databaseHelper: databaseHelper));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final DatabaseHelper databaseHelper;
+  MyApp({required this.databaseHelper});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => ProjectData(),
+      create: (context) => ProjectData(databaseHelper: databaseHelper),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'G-VISION',

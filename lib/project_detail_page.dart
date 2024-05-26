@@ -1,45 +1,56 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import 'package:provider/provider.dart';
 
 import 'project_data.dart';
+import 'database_helper.dart';
 
 class ProjectDetailPage extends StatelessWidget {
-  final Project project;
+  final int projectId;
 
-  ProjectDetailPage({Key? key, required this.project}) : super(key: key);
+  ProjectDetailPage({Key? key, required this.projectId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(project.name)),
+          title: Text('Project Details')
+      ),
       backgroundColor: Colors.grey[300],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _projectName(),
-            SizedBox(height: 3),
-            // 이미지가 있다면 표시
-            _buildOriginalImageSection(),
-            SizedBox(height: 3),
-            // 모니터링 항목 및 측정값 표시
-            _buildProcessedImageSection(),
-            SizedBox(height: 3),
-            // 모니터링 항목 및 측정값 표시
-            _buildProcessedDataSection(),
-            // 추가로 필요한 정보 또는 기능이 있다면 여기에 추가
-          ],
-        ),
+      body: FutureBuilder<Project>(
+        future: Provider.of<ProjectData>(context, listen: false).getProjectById(projectId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error loading project data'));
+          } else if (!snapshot.hasData) {
+            return Center(child: Text('Project not found'));
+          } else {
+            final project = snapshot.data!;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _projectName(project),
+                  SizedBox(height: 3),
+                  _buildOriginalImageSection(project),
+                  SizedBox(height: 3),
+                  _buildProcessedImageSection(project),
+                  SizedBox(height: 3),
+                  _buildProcessedDataSection(project),
+                ],
+              ),
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _projectName() {
-    // 프로젝트 이름, 프로젝트 생성일 박스
+  Widget _projectName(Project project) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
@@ -72,8 +83,7 @@ class ProjectDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOriginalImageSection() {
-    // 원본 이미지 위젯
+  Widget _buildOriginalImageSection(Project project) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
@@ -84,7 +94,7 @@ class ProjectDetailPage extends StatelessWidget {
               width: double.infinity,
               margin: EdgeInsets.fromLTRB(5.0, 3.0, 0.0, 0.0),
               child: const Text(
-                "원본 이미지",
+                "Original Image",
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               )),
           Container(
@@ -92,15 +102,14 @@ class ProjectDetailPage extends StatelessWidget {
             child: project.imagePath != null
                 ? Image.file(File(project.imagePath!),
                 height: 200, fit: BoxFit.cover)
-                : Text('이미지 없음'),
+                : Text('No Image'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProcessedImageSection() {
-    // 처리된 이미지 위젯
+  Widget _buildProcessedImageSection(Project project) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
@@ -111,7 +120,7 @@ class ProjectDetailPage extends StatelessWidget {
               width: double.infinity,
               margin: EdgeInsets.fromLTRB(5.0, 3.0, 0.0, 0.0),
               child: const Text(
-                "후처리된 이미지",
+                "Processed Image",
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               )),
           Container(
@@ -119,16 +128,14 @@ class ProjectDetailPage extends StatelessWidget {
             child: project.processedImageUrl != null
                 ? Image.network(project.processedImageUrl!,
                 height: 200, fit: BoxFit.cover)
-                : Text('이미지 없음'),
+                : Text('No Image'),
           ),
         ],
       ),
     );
   }
 
-
-  Widget _buildProcessedDataSection() {
-    // 모니터링 식물 물리 데이터
+  Widget _buildProcessedDataSection(Project project) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
@@ -150,13 +157,9 @@ class ProjectDetailPage extends StatelessWidget {
             SizedBox(height: 3),
             Text('Green Pixel Count: ${project.greenPixelCount?.toString() ??
                 'N/A'}', style: TextStyle(fontSize: 20),),
-            // 기타 필요한 모니터링 데이터가 있다면 여기에 추가
           ],
         ),
       ),
     );
   }
 }
-
-
-

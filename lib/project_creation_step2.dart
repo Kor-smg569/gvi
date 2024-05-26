@@ -49,7 +49,15 @@ class _ProjectCreationStep2State extends State<ProjectCreationStep2> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Select an Image')),
+      appBar: AppBar(
+          title: Text('Step 2 - Select an Image'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.navigate_next),
+            onPressed: _navigateStep3, // 변경된 부분
+          )
+        ],
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,10 +67,6 @@ class _ProjectCreationStep2State extends State<ProjectCreationStep2> {
           ElevatedButton(
             onPressed: _pickImage,
             child: Text('Pick an Image from Gallery'),
-          ),
-          ElevatedButton(
-            onPressed: _navigateStep3,
-            child: Text('Next Step'), // 'Process Image' 대신 'Next Step'으로 변경
           ),
         ],
       ),
