@@ -1,8 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
-import 'dart:io';
 
 import 'my_page.dart';
 import 'project_data.dart';
@@ -48,16 +49,20 @@ class _ProjectCreationStep4State extends State<ProjectCreationStep4> {
     var request = http.MultipartRequest('POST', uri)
       ..files.add(await http.MultipartFile.fromPath('image', widget.imagePath!))
       ..fields['line_data'] = linesJsonData // 좌표 데이터
-      ..fields['knownDistance'] = widget.project.knownDistance ?? ""; // 카메라 센서 너비를 문자열 필드로 직접 추가
+      ..fields['knownDistance'] = widget.project.knownDistance ?? ""; // 거리값 보정 매개변수
 
     var response = await request.send();
 
     if (response.statusCode == 200) {
       final responseBody = await http.Response.fromStream(response);
       var data = jsonDecode(responseBody.body);
+      String? processedImageUrl = data['processed_image_url'];
+      if (processedImageUrl != null) {
+        // Processed 이미지 다운로드 및 로컬 저장소에 저장
+        await _downloadAndSaveImage(processedImageUrl);
+      }
       setState(() {
         _isLoading = false;
-        widget.project.processedImageUrl = data['processed_image_url'];
         widget.project.meanR = double.tryParse(data['mean_R'].toString());
         widget.project.meanG = double.tryParse(data['mean_G'].toString());
         widget.project.meanB = double.tryParse(data['mean_B'].toString());
@@ -70,6 +75,23 @@ class _ProjectCreationStep4State extends State<ProjectCreationStep4> {
         _isButtonDisabled = false;
         print('Server error: ${response.statusCode}');
       });
+    }
+  }
+
+  Future<void> _downloadAndSaveImage(String url) async {
+    try {
+      var response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        Directory appDir = await getApplicationDocumentsDirectory();
+        String fileName = '${DateTime.now().millisecondsSinceEpoch}.png';
+        File file = File('${appDir.path}/$fileName');
+        await file.writeAsBytes(response.bodyBytes);
+        setState(() {
+          widget.project.processedImageUrl = file.path;
+        });
+      }
+    } catch (e) {
+      print('Error downloading image: $e');
     }
   }
 
@@ -121,8 +143,8 @@ class _ProjectCreationStep4State extends State<ProjectCreationStep4> {
             if (_isLoading) CircularProgressIndicator() else Container(),
             if (widget.project.processedImageUrl != null)
               Center(
-                child: Image.network(
-                  widget.project.processedImageUrl!,
+                child: Image.file(
+                  File(widget.project.processedImageUrl!),
                   height: 500,
                   fit: BoxFit.cover,
                 ),

@@ -14,7 +14,6 @@ class ProjectDB {
   String? processedImageUrl;
   List<Map<String, dynamic>> linesData = [];
   List<double>? distances;
-  String? knownDistance;
 
   ProjectDB({
     this.id,
@@ -28,7 +27,6 @@ class ProjectDB {
     this.processedImageUrl,
     this.linesData = const [],
     this.distances,
-    this.knownDistance,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,7 +42,6 @@ class ProjectDB {
       'processedImageUrl': processedImageUrl,
       'linesData': jsonEncode(linesData),
       'distances': jsonEncode(distances),
-      'knownDistance': knownDistance,
     };
   }
 
@@ -59,11 +56,8 @@ class ProjectDB {
       meanB: map['meanB'],
       greenPixelCount: map['greenPixelCount'],
       processedImageUrl: map['processedImageUrl'],
-      linesData: jsonDecode(map['linesData']),
-      distances: (jsonDecode(map['distances']) as List)
-          .map((d) => double.parse(d.toString()))
-          .toList(),
-      knownDistance: map['knownDistance'],
+      linesData: (jsonDecode(map['linesData']) as List).map((e) => Map<String, dynamic>.from(e)).toList(),
+      distances: (jsonDecode(map['distances']) as List).map((d) => double.parse(d.toString())).toList(),
     );
   }
 }
@@ -82,7 +76,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'projectdb.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE projectsdb(
@@ -96,8 +90,7 @@ class DatabaseHelper {
             greenPixelCount REAL,
             processedImageUrl TEXT,
             linesData TEXT,
-            distances TEXT,
-            knownDistance TEXT
+            distances TEXT
           )
         ''');
       },
@@ -114,10 +107,9 @@ class DatabaseHelper {
               meanG REAL,
               meanB REAL,
               greenPixelCount REAL,
-              processedImageUrl TEXT
+              processedImageUrl TEXT,
               linesData TEXT,
-              distances TEXT,
-              knownDistance TEXT
+              distances TEXT
             )
           '''); // 테이블 재생성
         }

@@ -1,20 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'database_helper.dart';
-import 'dart:convert'; // 추가된 부분
+import 'dart:convert';
 
 class Project {
   int? id;
   String name;
-  String? imagePath; // 업로드할 이미지의 경로
+  String? imagePath;
   DateTime creationDate;
-  double? meanR; // RGB 평균값
+  double? meanR;
   double? meanG;
   double? meanB;
-  double? greenPixelCount; // 녹색 픽셀 수
+  double? greenPixelCount;
   String? processedImageUrl;
   List<Map<String, dynamic>> linesData = [];
-  List<double>? distances; // 라인 사이의 거리 데이터
-  String? knownDistance;  // 카메라 센서 너비 속성 추가
+  List<double>? distances;
+  String? knownDistance;
 
   Project({
     this.id,
@@ -44,7 +44,6 @@ class Project {
       'processedImageUrl': processedImageUrl,
       'linesData': jsonEncode(linesData),
       'distances': jsonEncode(distances),
-      'knownDistance': knownDistance,
     };
   }
 
@@ -59,11 +58,11 @@ class Project {
       meanB: map['meanB'],
       greenPixelCount: map['greenPixelCount'],
       processedImageUrl: map['processedImageUrl'],
-      linesData: jsonDecode(map['linesData']),
-      distances: (jsonDecode(map['distances']) as List).map((d) => double.parse(d.toString())).toList(),
-      knownDistance: map['knownDistance'],
+      linesData: map['linesData'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['linesData'])) : [],
+      distances: map['distances'] != null ? List<double>.from((jsonDecode(map['distances']) as List).map((d) => d.toDouble())) : [],
     );
   }
+
 }
 
 class ProjectData with ChangeNotifier {
@@ -77,20 +76,9 @@ class ProjectData with ChangeNotifier {
   }
 
   Future<void> _loadProjects() async {
-    _projects = (await databaseHelper.getProjectsDB()).map((projectDB) => Project(
-      id: projectDB.id,
-      name: projectDB.name,
-      creationDate: projectDB.creationDate,
-      imagePath: projectDB.imagePath,
-      meanR: projectDB.meanR,
-      meanG: projectDB.meanG,
-      meanB: projectDB.meanB,
-      greenPixelCount: projectDB.greenPixelCount,
-      processedImageUrl: projectDB.processedImageUrl,
-      linesData: projectDB.linesData,
-      distances: projectDB.distances,
-      knownDistance: projectDB.knownDistance,
-    )).toList();
+    _projects = (await databaseHelper.getProjectsDB())
+        .map((projectDB) => Project.fromMap(projectDB.toMap()))
+        .toList();
     notifyListeners();
   }
 
@@ -141,7 +129,8 @@ class ProjectData with ChangeNotifier {
     }
   }
 
-  Future<void> updateProjectWithProcessingResults(int projectId, {double? meanR, double? meanG, double? meanB, double? greenPixelCount, String? processedImageUrl, List<double>? distances, String? knownDistance}) async {
+  Future<void> updateProjectWithProcessingResults(int projectId,
+      {double? meanR, double? meanG, double? meanB, double? greenPixelCount, String? processedImageUrl, List<double>? distances}) async {
     var project = _projects.firstWhere((project) => project.id == projectId);
     project.meanR = meanR;
     project.meanG = meanG;
@@ -149,7 +138,6 @@ class ProjectData with ChangeNotifier {
     project.greenPixelCount = greenPixelCount;
     project.processedImageUrl = processedImageUrl;
     project.distances = distances;
-    project.knownDistance = knownDistance;
 
     await databaseHelper.updateProjectDB(ProjectDB(
       id: project.id,
@@ -170,19 +158,6 @@ class ProjectData with ChangeNotifier {
 
   Future<Project> getProjectById(int id) async {
     var projectDB = await databaseHelper.getProjectById(id);
-    return Project(
-      id: projectDB.id,
-      name: projectDB.name,
-      creationDate: projectDB.creationDate,
-      imagePath: projectDB.imagePath,
-      meanR: projectDB.meanR,
-      meanG: projectDB.meanG,
-      meanB: projectDB.meanB,
-      greenPixelCount: projectDB.greenPixelCount,
-      processedImageUrl: projectDB.processedImageUrl,
-      linesData: projectDB.linesData,
-      distances: projectDB.distances,
-      knownDistance: projectDB.knownDistance,
-    );
+    return Project.fromMap(projectDB.toMap());
   }
 }

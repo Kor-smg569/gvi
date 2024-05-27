@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'project_data.dart';
-import 'database_helper.dart';
 
 class ProjectDetailPage extends StatelessWidget {
   final int projectId;
@@ -15,7 +14,7 @@ class ProjectDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text('Project Details')
+        title: Text('Project Details'),
       ),
       backgroundColor: Colors.grey[300],
       body: FutureBuilder<Project>(
@@ -24,7 +23,7 @@ class ProjectDetailPage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading project data'));
+            return Center(child: Text('Error loading project data: ${snapshot.error}'));
           } else if (!snapshot.hasData) {
             return Center(child: Text('Project not found'));
           } else {
@@ -62,7 +61,7 @@ class ProjectDetailPage extends StatelessWidget {
             width: double.infinity,
             margin: EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
             child: Text(
-              '${project.name}',
+              project.name,
               style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
             ),
           ),
@@ -71,12 +70,12 @@ class ProjectDetailPage extends StatelessWidget {
             width: double.infinity,
             margin: EdgeInsets.fromLTRB(0.0, 0.0, 0.0, 5.0),
             child: Text(
-                'Creation Date: ${DateFormat.yMMMd().format(
-                    project.creationDate)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.normal,
-                )),
+              'Creation Date: ${DateFormat.yMMMd().format(project.creationDate)}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
           ),
         ],
       ),
@@ -91,12 +90,13 @@ class ProjectDetailPage extends StatelessWidget {
       child: Column(
         children: [
           Container(
-              width: double.infinity,
-              margin: EdgeInsets.fromLTRB(5.0, 3.0, 0.0, 0.0),
-              child: const Text(
-                "Original Image",
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              )),
+            width: double.infinity,
+            margin: EdgeInsets.fromLTRB(5.0, 3.0, 0.0, 0.0),
+            child: const Text(
+              "Original Image",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
           Container(
             margin: EdgeInsets.all(5.0),
             child: project.imagePath != null
@@ -117,16 +117,17 @@ class ProjectDetailPage extends StatelessWidget {
       child: Column(
         children: [
           Container(
-              width: double.infinity,
-              margin: EdgeInsets.fromLTRB(5.0, 3.0, 0.0, 0.0),
-              child: const Text(
-                "Processed Image",
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              )),
+            width: double.infinity,
+            margin: EdgeInsets.fromLTRB(5.0, 3.0, 0.0, 0.0),
+            child: const Text(
+              "Processed Image",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
           Container(
             margin: EdgeInsets.all(5.0),
             child: project.processedImageUrl != null
-                ? Image.network(project.processedImageUrl!,
+                ? Image.file(File(project.processedImageUrl!),
                 height: 200, fit: BoxFit.cover)
                 : Text('No Image'),
           ),
@@ -143,23 +144,57 @@ class ProjectDetailPage extends StatelessWidget {
       child: Container(
         width: double.infinity,
         margin: EdgeInsets.all(5.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Mean R Values: ${project.meanR?.toStringAsFixed(2) ?? 'N/A'}',
-              style: TextStyle(fontSize: 20),),
-            SizedBox(height: 3),
-            Text('Mean G Values: ${project.meanG?.toStringAsFixed(2) ?? 'N/A'}',
-              style: TextStyle(fontSize: 20),),
-            SizedBox(height: 3),
-            Text('Mean B Values: ${project.meanB?.toStringAsFixed(2) ?? 'N/A'}',
-              style: TextStyle(fontSize: 20),),
-            SizedBox(height: 3),
-            Text('Green Pixel Count: ${project.greenPixelCount?.toString() ??
-                'N/A'}', style: TextStyle(fontSize: 20),),
+        child: DataTable(
+          dataRowHeight: 80,
+          columns: const [
+            DataColumn(
+              label: Text(
+                'Metric',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Value',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+          rows: [
+            DataRow(cells: [
+              DataCell(Text('Mean R Values')),
+              DataCell(Text(project.meanR?.toStringAsFixed(10) ?? 'N/A')),
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Mean G Values')),
+              DataCell(Text(project.meanG?.toStringAsFixed(10) ?? 'N/A')),
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Mean B Values')),
+              DataCell(Text(project.meanB?.toStringAsFixed(10) ?? 'N/A')),
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Green Pixel Count')),
+              DataCell(Text(project.greenPixelCount?.toString() ?? 'N/A')),
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Lines Data')),
+              DataCell(Text(_formatLinesData(project.linesData))),
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Distances')),
+              DataCell(Text(project.distances?.join(', ') ?? 'N/A')),
+            ]),
           ],
         ),
       ),
     );
+  }
+
+  String _formatLinesData(List<Map<String, dynamic>> linesData) {
+    if (linesData.isEmpty) return 'N/A';
+    return linesData
+        .map((line) => 'Start: (${line['start']['x']}, ${line['start']['y']}), \n End: (${line['end']['x']}, ${line['end']['y']})')
+        .join('\n');
   }
 }
