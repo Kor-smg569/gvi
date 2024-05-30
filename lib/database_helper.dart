@@ -14,6 +14,7 @@ class ProjectDB {
   String? processedImageUrl;
   List<Map<String, dynamic>> linesData = [];
   List<double>? distances;
+  String? knownDistance;
 
   ProjectDB({
     this.id,
@@ -27,6 +28,7 @@ class ProjectDB {
     this.processedImageUrl,
     this.linesData = const [],
     this.distances,
+    this.knownDistance,
   });
 
   Map<String, dynamic> toMap() {
@@ -42,6 +44,7 @@ class ProjectDB {
       'processedImageUrl': processedImageUrl,
       'linesData': jsonEncode(linesData),
       'distances': jsonEncode(distances),
+      'knownDistance': knownDistance,
     };
   }
 
@@ -56,8 +59,18 @@ class ProjectDB {
       meanB: map['meanB'],
       greenPixelCount: map['greenPixelCount'],
       processedImageUrl: map['processedImageUrl'],
-      linesData: (jsonDecode(map['linesData']) as List).map((e) => Map<String, dynamic>.from(e)).toList(),
-      distances: (jsonDecode(map['distances']) as List).map((d) => double.parse(d.toString())).toList(),
+      linesData: (map['linesData'] != null && map['linesData'] is String)
+          ? (jsonDecode(map['linesData']!) as List?)
+                  ?.map((item) => Map<String, dynamic>.from(item))
+                  .toList() ??
+              []
+          : [],
+      distances: (map['distances'] != null && map['distances'] is String)
+          ? (jsonDecode(map['distances']!) as List?)
+              ?.map((d) => double.parse(d.toString()))
+              .toList()
+          : [],
+      knownDistance: map['knownDistance'],
     );
   }
 }
@@ -76,7 +89,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'projectdb.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 1,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE projectsdb(
@@ -90,7 +103,8 @@ class DatabaseHelper {
             greenPixelCount REAL,
             processedImageUrl TEXT,
             linesData TEXT,
-            distances TEXT
+            distances TEXT,
+            knownDistance TEXT
           )
         ''');
       },
@@ -107,9 +121,10 @@ class DatabaseHelper {
               meanG REAL,
               meanB REAL,
               greenPixelCount REAL,
-              processedImageUrl TEXT,
+              processedImageUrl TEXT
               linesData TEXT,
-              distances TEXT
+              distances TEXT,
+              knownDistance TEXT
             )
           '''); // 테이블 재생성
         }

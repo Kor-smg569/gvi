@@ -58,16 +58,21 @@ class Project {
       meanB: map['meanB'],
       greenPixelCount: map['greenPixelCount'],
       processedImageUrl: map['processedImageUrl'],
-      linesData: map['linesData'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['linesData'])) : [],
-      distances: map['distances'] != null ? List<double>.from((jsonDecode(map['distances']) as List).map((d) => d.toDouble())) : [],
+      linesData: (jsonDecode(map['linesData']) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList(),
+      distances: (jsonDecode(map['distances']) as List)
+          .map((d) => double.parse(d.toString()))
+          .toList(),
     );
   }
-
 }
 
 class ProjectData with ChangeNotifier {
   List<Project> _projects = [];
+  List<Project> _sharedProjects = [];
   List<Project> get projects => _projects;
+  List<Project> get sharedProjects => _sharedProjects;
 
   DatabaseHelper databaseHelper;
 
@@ -159,5 +164,25 @@ class ProjectData with ChangeNotifier {
   Future<Project> getProjectById(int id) async {
     var projectDB = await databaseHelper.getProjectById(id);
     return Project.fromMap(projectDB.toMap());
+  }
+
+  void shareProject(int index) {
+    if (index >= 0 && index < _projects.length) {
+      Project project = _projects[index];
+      _sharedProjects.add(Project(
+        id: project.id,
+        name: project.name,
+        creationDate: project.creationDate,
+        imagePath: project.imagePath,
+        meanR: project.meanR,
+        meanG: project.meanG,
+        meanB: project.meanB,
+        greenPixelCount: project.greenPixelCount,
+        processedImageUrl: project.processedImageUrl,
+        linesData: List<Map<String, dynamic>>.from(project.linesData),
+        distances: List<double>.from(project.distances ?? []),
+      ));
+      notifyListeners();
+    }
   }
 }

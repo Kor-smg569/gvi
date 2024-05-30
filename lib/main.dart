@@ -22,8 +22,8 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'G-VISION',
         theme: ThemeData(
-          useMaterial3: false,
-          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xff4CAF50)),
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xff2b542b)),
         ),
         home: MyPage(),
       ),

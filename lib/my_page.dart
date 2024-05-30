@@ -10,6 +10,7 @@ import 'project_creation_step1.dart';
 import 'project_creation_step2.dart';
 import 'project_creation_step4.dart';
 import 'project_detail_page.dart';
+import 'share_page.dart';
 
 class MyPage extends StatefulWidget {
   @override
@@ -17,6 +18,8 @@ class MyPage extends StatefulWidget {
 }
 
 class _MyPageState extends State<MyPage> {
+  int _currentIndex = 0;
+
   Future<void> createProjectOnServer(String projectName) async {
     final url = Uri.parse('http://10.32.36.63:8080/upload');
     final response = await http.post(url,
@@ -79,6 +82,14 @@ class _MyPageState extends State<MyPage> {
     }
   }
 
+  void _shareProject(BuildContext context, int index) {
+    Provider.of<ProjectData>(context, listen: false).shareProject(index);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SharePage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,6 +123,7 @@ class _MyPageState extends State<MyPage> {
         },
       ),
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.view_list),
@@ -122,6 +134,18 @@ class _MyPageState extends State<MyPage> {
             label: 'Archive',
           ),
         ],
+        selectedItemColor: Colors.green,
+        onTap: (int index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          if (index == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => SharePage()),
+            );
+          }
+        },
       ),
     );
   }
@@ -178,8 +202,7 @@ class _MyPageState extends State<MyPage> {
           children: [
             Text(
               project.name,
-              style:
-              const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8.0),
             Text(
@@ -198,6 +221,8 @@ class _MyPageState extends State<MyPage> {
           _editProjectName(context, index);
         } else if (value == 'delete') {
           _deleteProject(context, index);
+        } else if (value == 'share') {
+          _shareProject(context, index); // share 버튼 내 기능
         }
       },
       itemBuilder: (BuildContext context) {
@@ -214,6 +239,13 @@ class _MyPageState extends State<MyPage> {
             child: ListTile(
               leading: const Icon(Icons.delete),
               title: const Text('Delete Project'),
+            ),
+          ),
+          PopupMenuItem<String>( // ... 내의 share 버튼
+            value: 'share',
+            child: ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text('Go to shared'),
             ),
           ),
         ];
