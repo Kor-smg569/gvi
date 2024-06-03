@@ -45,7 +45,7 @@ class _ProjectCreationStep4State extends State<ProjectCreationStep4> {
     print('Uploading JSON data: $linesJsonData');
     print('Uploading JSON data: ${widget.project.knownDistance}');
 
-    Uri uri = Uri.parse('http://192.0.0.2:8080/upload');
+    Uri uri = Uri.parse('http://10.32.36.214:8080/upload');
     var request = http.MultipartRequest('POST', uri)
       ..files.add(await http.MultipartFile.fromPath('image', widget.imagePath!))
       ..fields['line_data'] = linesJsonData // 좌표 데이터

@@ -70,9 +70,8 @@ class Project {
 
 class ProjectData with ChangeNotifier {
   List<Project> _projects = [];
-  List<Project> _sharedProjects = [];
   List<Project> get projects => _projects;
-  List<Project> get sharedProjects => _sharedProjects;
+  List<Project> sharedProjects = [];
 
   DatabaseHelper databaseHelper;
 
@@ -134,6 +133,18 @@ class ProjectData with ChangeNotifier {
     }
   }
 
+  Future<void> shareProject(int index) async {
+    if (index >= 0 && index < _projects.length) {
+      sharedProjects.add(_projects[index]);
+      notifyListeners();
+    }
+  }
+
+  Future<void> removeSharedProject(int projectId) async {
+    sharedProjects.removeWhere((project) => project.id == projectId);
+    notifyListeners();
+  }
+
   Future<void> updateProjectWithProcessingResults(int projectId,
       {double? meanR, double? meanG, double? meanB, double? greenPixelCount, String? processedImageUrl, List<double>? distances}) async {
     var project = _projects.firstWhere((project) => project.id == projectId);
@@ -164,25 +175,5 @@ class ProjectData with ChangeNotifier {
   Future<Project> getProjectById(int id) async {
     var projectDB = await databaseHelper.getProjectById(id);
     return Project.fromMap(projectDB.toMap());
-  }
-
-  void shareProject(int index) {
-    if (index >= 0 && index < _projects.length) {
-      Project project = _projects[index];
-      _sharedProjects.add(Project(
-        id: project.id,
-        name: project.name,
-        creationDate: project.creationDate,
-        imagePath: project.imagePath,
-        meanR: project.meanR,
-        meanG: project.meanG,
-        meanB: project.meanB,
-        greenPixelCount: project.greenPixelCount,
-        processedImageUrl: project.processedImageUrl,
-        linesData: List<Map<String, dynamic>>.from(project.linesData),
-        distances: List<double>.from(project.distances ?? []),
-      ));
-      notifyListeners();
-    }
   }
 }

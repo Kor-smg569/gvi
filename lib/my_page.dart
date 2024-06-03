@@ -84,10 +84,6 @@ class _MyPageState extends State<MyPage> {
 
   void _shareProject(BuildContext context, int index) {
     Provider.of<ProjectData>(context, listen: false).shareProject(index);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SharePage()),
-    );
   }
 
   @override
@@ -217,9 +213,7 @@ class _MyPageState extends State<MyPage> {
   Widget _buildPopupMenuButton(BuildContext context, int index) {
     return PopupMenuButton<String>(
       onSelected: (String value) {
-        if (value == 'edit') {
-          _editProjectName(context, index);
-        } else if (value == 'delete') {
+        if (value == 'delete') {
           _deleteProject(context, index);
         } else if (value == 'share') {
           _shareProject(context, index); // share 버튼 내 기능
@@ -227,13 +221,6 @@ class _MyPageState extends State<MyPage> {
       },
       itemBuilder: (BuildContext context) {
         return [
-          PopupMenuItem<String>(
-            value: 'edit',
-            child: ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Name'),
-            ),
-          ),
           PopupMenuItem<String>(
             value: 'delete',
             child: ListTile(
@@ -251,42 +238,6 @@ class _MyPageState extends State<MyPage> {
         ];
       },
     );
-  }
-
-  Future<void> _editProjectName(BuildContext context, int index) async {
-    final projectData = Provider.of<ProjectData>(context, listen: false);
-    final project = projectData.projects[index];
-    TextEditingController _nameEditController =
-    TextEditingController(text: project.name);
-
-    String? newName = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Project Name'),
-          content: TextField(
-            controller: _nameEditController,
-            decoration: const InputDecoration(hintText: 'Enter new name'),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('Save'),
-              onPressed: () {
-                Navigator.of(context).pop(_nameEditController.text);
-              },
-            ),
-          ],
-        );
-      },
-    );
-
-    if (newName != null && newName.isNotEmpty) {
-      projectData.editProjectName(index, newName);
-    }
   }
 
   void _deleteProject(BuildContext context, int index) {
